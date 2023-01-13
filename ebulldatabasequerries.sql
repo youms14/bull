@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS e20 (
    montant varchar(8) NOT NULL
 );
 
--- Table EA20, entête du bulletin
+-- Table A20, entête du bulletin
 CREATE TABLE IF NOT EXISTS a20 (
     a20_id serial PRIMARY KEY,
     matricule char(7),
