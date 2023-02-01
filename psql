@@ -1,0 +1,252 @@
+>>Installer psql
+sudo yum install @postgresql
+>>initialiser une nouvelle bs dans psql
+sudo postgresql-setup --initdb
+>>changer le mot de pass du compte postgress:
+sudo passwd postgres
+>>Start/stop/restart le serveur PostgreSQL
+sudo systemctl start postgresql ## <-- start the server ##
+sudo systemctl stop postgresql ## <-- stop the server ##
+sudo systemctl restart postgresql ## <-- resstart the server ##
+sudo systemctl status postgresql ## <-- get status of the server ##
+>> Activer le serveur postgres at boot time on rhel 8:
+ sudo systemctl enable postgresql
+>>Pour se connecter/logger au compte par defaut postgres
+sudo -i -u postgres
+>>Pour déconnecter 
+logout
+
+>>Pour ouvrir postgress en mode interactif:
+psql
+>>Pour quitter le mode interactif:
+\q
+>>create a new postgres account, on a deux manières:
+Voie1	
+	sudo useradd tom
+	sudo passwd tom
+	>>>se connecter avec le user postgres
+	sudo -i -u postgres
+	createuser --interactive
+Voie2
+	>>>se connecter avec le user postgres
+	sudo -i -u postgres
+	createuser --interactive --pwprompt
+
+>>Creer une nouvelle Base de donnnées
+voie1
+	>>>On se connecte en tant qu'un ADMIN user:	
+	sudo -i -u postgres
+	>>>Creer la base de donnée "jerry" pour l'utilisateur "youmba"
+	createdb -O youmba jerry
+voie2
+	>>>On se connecte en tant qu'un ADMIN user:	
+	sudo -i -u postgres
+	>>>Choisir la BS par défaut postgres:
+	\c postgres
+	>>> Saisir:
+	CREATE DATABASE jerry
+
+>>Se connecter à la base de données jerry avec l'utilisateur youmba
+	>>>On se log en tant que youmba
+	sudo -i -u youmba
+	>>> On lance la BD en mode interactif
+	psql -d jerry -U youmba
+>>Ajouter une table à notre base de donnnées:
+	CREATE TABLE demo(
+ 		id serial PRIMARY KEY,
+ 		email VARCHAR (100) UNIQUE NOT NULL,
+ 		name  VARCHAR (50) UNIQUE NOT NULL
+	);
+>>Pour voir les infos sur les tables:
+	\d ou \dt
+>>Ajoutons quelques données :
+	INSERT INTO demo (id, email, name) VALUES (1, 'webmaster@cyberciti.biz', 'Vivek Gite');
+	INSERT INTO demo (id, email, name) VALUES (2, 'foo@bar.com', 'Foo Bar');
+	INSERT INTO demo (id, email, name) VALUES (3, 'roja@nixcraft.com', 'Roja T');
+	INSERT INTO demo (id, email, name) VALUES (4, 'marlena@gmail.net.in', 'Marlena John');
+>>Lister les données de la table:
+SELECT * FROM demo;
+>>Supprimer quelques données:
+DELETE FROM demo WHERE id = 4;
+>>Mise à jour d'une donnée:
+UPDATE demo SET email = 'foo@gmail.com' WHERE id = 2;
+
+>>Lister les bases de données:
+	>>>Se connecter :
+	sudo -i -u postgres
+	>>>taper \l ou \list
+>>Pour choisir une bd dans la liste des bases de données:
+	\c nom_de_la_BD
+>>Pour la liste des tables
+	\dt
+>>Pour sortir et revenir dans la base de donnée par defaut postgres
+>>Pour voir le schéma d'une table 
+\d+ table_name
+\d+ todo
+
+
+
+
+
+sudo gedit /var/lib/pgsql/data/pg_hba.conf
+'/home/youmba/Documents/Datas/outs/OUT_e20small_with_id.csv'
+
+>>CSV to DB
+1-copier le csv vers le dossier /tmp accéssible par tous les utilisateurs.
+sudo cp OUT_e20small_with_id.csv /tmp
+
+2-Utiliser la commande COPY de Postgres comme suit:
+COPY e20(e20_id,matricule,annee,mois,codeelement,montant)
+FROM '/tmp/OUT_e20small_with_id.csv'
+DELIMITER ';'
+CSV;
+
+
+COPY agt(matricule,nom,prenom,sexe,aanaissance,mmnaissance,jjnaissance,lieunaissance)
+FROM '/tmp/agtpetit.txt'
+DELIMITER ';'
+CSV;
+
+117674K;NQUEWOH ; PAULINUS YONG ;M;1954; 1; 1; 0
+>> ALTER TABLE
+agt
+    Colonne    |         Type          | Collationnement | NULL-able | Par défaut | Stockage | Cible de statistiques | Description 
+---------------+-----------------------+-----------------+-----------+------------+----------+-----------------------+-------------
+ matricule     | character varying(7)  |                 |           |            | extended |                       | 
+ nom           | character varying(35) |                 |           |            | extended |                       | 
+ prenom        | character varying(35) |                 |           |            | extended |                       | 
+ sexe          | character(1)          |                 |           |            | extended |                       | 
+ aanaissance   | character varying(4)  |                 |           |            | extended |                       | 
+ mmnaissance   | character varying(2)  |                 |           |            | extended |                       | 
+ jjnaissance   | character varying(2)  |                 |           |            | extended |                       | 
+ lieunaissance | character varying(7)  |                 |           |            | extended |                       | 
+Contraintes de vérification :
+    "agt_sexe_check" CHECK (sexe = ANY (ARRAY['F'::bpchar, 'M'::bpchar, 'f'::bpchar, 'H'::bpchar]))
+
+
+ALTER TABLE agt 
+DROP COLUMN sexe;
+
+ALTER TABLE agt 
+DROP COLUMN datenaissance;
+
+ALTER TABLE agt 
+DROP COLUMN lieunaissance;
+
+
+ALTER TABLE agt 
+ADD COLUMN agt_id SERIAL PRIMARY KEY;
+
+ALTER TABLE agt 
+ADD COLUMN sexe char(1) CHECK (sexe IN ('F', 'M', 'f','H',NULL,''));
+
+ALTER TABLE agt 
+ADD COLUMN aanaissance varchar(4);
+
+ALTER TABLE agt 
+ADD COLUMN mmnaissance varchar(2);
+
+ALTER TABLE agt 
+ADD COLUMN jjnaissance varchar(2);
+
+ALTER TABLE agt 
+ADD COLUMN lieunaissance varchar(7);
+
+
+ALTER TABLE libellee20 
+ADD COLUMN nature char(1);
+
+
+
+
+
+SELECT *
+FROM information_schema.constraint_table_usage
+WHERE table_name = 'agt'
+
+
+
+
+
+ALTER TABLE agt DROP CONSTRAINT  agt_sexe_check;
+
+
+
+
+
+>>--------------------------------------------------PHASE II DU PROJET - Notifications--------------------------------
+Sheme:
+postgres ------(FUNCTION and TRIGGER)------> Node Js -------> (SOCKET IO - BACKGROUND TASK - LOCAL NOTIFICATION) -------> Flutter Client Get Notification Message.
+
+I- FUNCTION
+_____________________________________________
+CREATE OR REPLACE FUNCTION notify_nodejs_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+	PERFORM pg_notify('new_testevent',row_to_json(NEW)::text);
+	RETURN NULL;
+END;
+$function$;
+_______________________________________
+CREATE FUNCTION notify_trigger() RETURNS trigger AS $$
+DECLARE
+BEGIN
+  PERFORM pg_notify('watchers', TG_TABLE_NAME || ',id,' || NEW.id );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql;
+______________________________________________
+CREATE OR REPLACE FUNCTION notify_nodejs_function() RETURNS trigger AS $$
+DECLARE
+BEGIN
+	PERFORM pg_notify('new_testevent',row_to_json(NEW)::text);
+	RETURN new;
+END;
+$$ LANGUAGE plpgsql;
+
+
+Pour créer un fonction à partir d'un fichier:
+psql -h localhost -U testuser -d testdb -f create_my_function.sql
+
+Exemples:
+psql -h localhost -U postgres -d bulldb -f /home/youmba/NodeProjects/bull/notify_nodejs_function.sql
+psql -h localhost -U postgres -d bulldb -f /home/youmba/NodeProjects/bull/notify_app_after_table_insert_trigger.sql
+
+
+II- TRIGGER
+_____________________________________________________
+CREATE OR REPLACE TRIGGER notify_app_after_table_insert_trigger AFTER INSERT ON a20
+FOR EACH ROW EXECUTE PROCEDURE notify_nodejs_function();
+
+
+_______________________________________________________
+SELECT TIMESTAMP,
+    a20_id
+  FROM a20
+  ORDER BY TIMESTAMP DESC
+  LIMIT 1
+
+
+>>pour lister les fonctions/procedure: 
+/df
+>>pour voir/modifier le code d'une fonction
+\df+ notify_nodejs_function;
+\ef notify_nodejs_function
+
+
+>>pour lister les trigers d'une database
+SELECT  event_object_table AS table_name ,trigger_name         
+FROM information_schema.triggers  
+GROUP BY table_name , trigger_name 
+ORDER BY table_name ,trigger_name
+
+
+SELECT * FROM pg_trigger
+WHERE tgrelid = 'bulldb.a20'::regclass
+
+
+
+
+

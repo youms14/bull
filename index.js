@@ -2,7 +2,8 @@
 //const { query } = require("express");
 const express = require("express");//import de la bibliothèque
 const app = express();//définition de l'application à partir de a bibliothèque de base express
-const pool = require("./db");//import du pool de connextion à la base de données.
+const {pool,client} = require("./db");//import du pool de connextion à la base de données.
+
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 
@@ -17,7 +18,27 @@ app.use(express.json());
 
 
 
+const listenQuery = pool.query('LISTEN newsaleevent');
 
+// pool.on('new_testevent', async (data) => {
+//   const payload = JSON.stringify(data.payload);
+//   console.log("Nouvelle ligne Ajoutée: ", payload);
+// });
+
+// Apply channel-specific listener mechanism
+client.connect(function(err, client, done) {
+  if(err) {
+      console.log(err);
+  }
+  console.log("base de donnée connectée");
+  client.on('notification', function(msg) {
+    console.log("===============");  
+    console.log(msg);
+    console.log("==============="); 
+  }); 
+  const query = client.query('LISTEN soldechannel');
+  //done();
+});
 
 app.get("/bonjour", async(req,res)=>{
     res.json("BONJOUR")

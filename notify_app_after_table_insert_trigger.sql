@@ -1,0 +1,3 @@
+CREATE OR REPLACE TRIGGER notify_app_trigger 
+AFTER INSERT ON a20
+FOR EACH ROW EXECUTE PROCEDURE notify_nodejs_function();
