@@ -13,7 +13,7 @@ const pool = new Pool ({
     user:"postgres",
     password: "youmssoft",
     database: "bulldb",
-    host: "localhost",
+    host: "localhost",//172.31.31.216
     port: 5432//the defaul port of postgres
 });
 

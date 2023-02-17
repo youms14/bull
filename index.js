@@ -7,6 +7,11 @@ const {pool,client} = require("./db");//import du pool de connextion à la base 
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 
+const server = require('http').createServer()
+const io = require('socket.io')(server)
+
+var dbMessage = "NOT_AVAILABLE"
+
 const {queryrentete,queryElementdeGain,queryElementdeRetenu}= require("./queries");
 // const queryrentete= require("./queries");
 // const queryElementdeGain= require("./queries");
@@ -16,16 +21,33 @@ const {queryrentete,queryElementdeGain,queryElementdeRetenu}= require("./queries
 //(utiliser pour récuperer et analyser les requêtes entrantes avec les payload JSON)
 app.use(express.json());
 
+//ECOUTEUR DU CLIENT(PHONE)
+io.on('connection',function (client) {
+  //TODO: Se rassurer que le client connecté c'est celui qui doit recevoir le message
+  //en utilisant son phone.id
+  console.log('client connecté...', client.id);
+  //En fonction de la disponibilité du client
+  client.on('message', function name(data) {
+    console.log('Message du client : '+data);
+    
+    if(data=="AVAILABLE_CLIENT"){
+      //Envois périodique du message
+      io.emit('message',dbMessage);
+      console.log("Message envoyé au serveur pour la 1iere fois")
+      // setTimeout(() => {  io.emit('message',dbMessage);console.log("Message envoyé au serveur pour la 2ieme fois") },3000 );//  18000000
+      // io.emit('message',msg.payload);
+      // console.log("Message envoyé au serveur pour la 3ieme fois")
+      // setTimeout(() => {  io.emit('message',dbMessage); console.log("Message envoyé au serveur pour la 4ieme fois")},3000 );
+      // io.emit('message',dbMessage);
+      // console.log("Message envoyé au serveur pour la 5ieme fois")
+      // setTimeout(() => {  io.emit('message',dbMessage); console.log("Message envoyé au serveur pour la 6ieme fois") },3000 );
+    }
+
+  })
+});
 
 
-const listenQuery = pool.query('LISTEN newsaleevent');
-
-// pool.on('new_testevent', async (data) => {
-//   const payload = JSON.stringify(data.payload);
-//   console.log("Nouvelle ligne Ajoutée: ", payload);
-// });
-
-// Apply channel-specific listener mechanism
+//ECOUTEUR DE LA BASE DE DONNEES
 client.connect(function(err, client, done) {
   if(err) {
       console.log(err);
@@ -33,12 +55,15 @@ client.connect(function(err, client, done) {
   console.log("base de donnée connectée");
   client.on('notification', function(msg) {
     console.log("===============");  
-    console.log(msg);
-    console.log("==============="); 
+    console.log(msg.payload);//msg.payload
+    dbMessage=msg.payload;
+    console.log("===============");    
   }); 
   const query = client.query('LISTEN soldechannel');
   //done();
 });
+
+
 
 app.get("/bonjour", async(req,res)=>{
     res.json("BONJOUR")
@@ -93,9 +118,7 @@ app.get('/view-pdf-all', (req, res) => {
     res.writeHead(200, {
       'Content-Type': 'application/pdf',
     });
-  });
-   
-
+  });  
 
 app.get("/newbullpdf/:matricule/:annee/:mois", async (req, res) => {
    try {
@@ -428,7 +451,6 @@ app.get('/generate-pdf', (req, res) => {
 });
 
 
-
 app.get("/newbullpdf/:matricule/:annee/:mois", (requete, reponse)=>{
 
    /*
@@ -471,6 +493,7 @@ app.get("/newbullpdf/:matricule/:annee/:mois", (requete, reponse)=>{
             */
    
 })
+
 app.get("/newbull/:matricule/:annee/:mois", async (requete, reponse) => {
     var object;
     try{
@@ -540,5 +563,11 @@ app.get("/newbull/:matricule/:annee/:mois", async (requete, reponse) => {
 
 
 app.listen(3000, () =>{
-    console.log("Le serveur est lancé au port 3000")
+    console.log("API disponible au port 3000")
 })
+
+var server_port = process.env.PORT || 4000;
+server.listen(server_port, function (err) {
+  if (err) throw err
+  console.log('SOCKET disponible au port %d', server_port);
+});
